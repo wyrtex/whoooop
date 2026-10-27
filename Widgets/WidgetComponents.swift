@@ -123,16 +123,67 @@ struct MetricColumn: View {
 }
 
 struct NoDataView: View {
+    var showsRefresh = false
+
     var body: some View {
-        VStack(spacing: 4) {
-            Image(systemName: "applewatch")
+        VStack(spacing: 6) {
+            Image(systemName: "heart.text.square")
                 .font(.title3)
-            Text("Откройте Pulsar")
+            Text("Нет данных из «Здоровья»")
                 .font(.caption2.weight(.semibold))
                 .multilineTextAlignment(.center)
                 .minimumScaleFactor(0.7)
+            Text("Разблокируйте iPhone и откройте Pulsar один раз, чтобы выдать доступ")
+                .font(.system(size: 9))
+                .multilineTextAlignment(.center)
+                .minimumScaleFactor(0.7)
+                .lineLimit(3)
+            #if os(iOS)
+            if showsRefresh {
+                RefreshButton()
+            }
+            #endif
         }
         .foregroundStyle(.secondary)
+    }
+}
+
+#if os(iOS)
+/// Интерактивная кнопка (iOS 17): обновляет данные прямо в виджете, приложение не открывается.
+struct RefreshButton: View {
+    var body: some View {
+        Button(intent: RefreshWidgetIntent()) {
+            Image(systemName: "arrow.clockwise")
+                .font(.system(size: 11, weight: .bold))
+                .foregroundStyle(.white)
+                .frame(width: 26, height: 26)
+                .background(Color.white.opacity(0.14), in: Circle())
+        }
+        .buttonStyle(.plain)
+    }
+}
+#endif
+
+/// Строка «обновлено …» с кнопкой обновления для средних и больших виджетов.
+struct FooterBar: View {
+    var entry: SummaryEntry
+    var leading: String? = nil
+
+    var body: some View {
+        HStack(spacing: 6) {
+            if let leading {
+                Text(leading)
+                    .font(.caption2)
+                    .foregroundStyle(Theme.secondaryText)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.8)
+            }
+            Spacer(minLength: 4)
+            UpdatedLabel(entry: entry)
+            #if os(iOS)
+            RefreshButton()
+            #endif
+        }
     }
 }
 

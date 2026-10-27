@@ -3,6 +3,7 @@ import HealthKit
 
 struct HomeView: View {
     @EnvironmentObject private var store: HealthDataStore
+    @ObservedObject private var sync = SyncBridge.shared
 
     var body: some View {
         NavigationStack {
@@ -16,7 +17,9 @@ struct HomeView: View {
                         ActivitiesCard(day: day)
                         StressSummaryCard(day: day)
                         KeyMetricsCard(day: day)
-                        StartWatchWorkoutCard()
+                        if sync.isWatchAppInstalled {
+                            StartWatchWorkoutCard()
+                        }
                     } else if store.isLoading {
                         ProgressView("Загружаем данные из Apple Health…")
                             .padding(.top, 80)

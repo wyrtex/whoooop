@@ -90,6 +90,7 @@ targets:
       - path: Shared/Engine
       - path: Shared/UI
       - path: Shared/Snapshot
+      - path: Shared/Health
       - path: Widgets
     settings:
       base:
@@ -105,6 +106,7 @@ targets:
         CFBundleShortVersionString: $(MARKETING_VERSION)
         CFBundleVersion: $(CURRENT_PROJECT_VERSION)
         PulsarAppGroup: group.com.pulsar.app
+        NSHealthShareUsageDescription: Виджеты Pulsar показывают восстановление, нагрузку и сон по данным Apple Watch из «Здоровья».
         NSExtension:
           NSExtensionPointIdentifier: com.apple.widgetkit-extension
 
@@ -127,5 +129,6 @@ targets:
         CFBundleShortVersionString: $(MARKETING_VERSION)
         CFBundleVersion: $(CURRENT_PROJECT_VERSION)
         PulsarAppGroup: group.com.pulsar.app
+        NSHealthShareUsageDescription: Виджеты Pulsar показывают восстановление, нагрузку и сон по данным Apple Watch из «Здоровья».
         NSExtension:
           NSExtensionPointIdentifier: com.apple.widgetkit-extension

@@ -32,9 +32,12 @@ enum SharedSnapshot {
         return try? JSONDecoder().decode(WatchSummary.self, from: data)
     }
 
+    /// Без App Group (например, при подписи через eSign) виджеты всё равно перезагрузятся
+    /// и посчитают данные сами из HealthKit.
     static func save(_ summary: WatchSummary) {
-        guard let defaults, let data = try? JSONEncoder().encode(summary) else { return }
-        defaults.set(data, forKey: key)
+        if let defaults, let data = try? JSONEncoder().encode(summary) {
+            defaults.set(data, forKey: key)
+        }
         WidgetCenter.shared.reloadAllTimelines()
     }
 }

@@ -59,12 +59,15 @@ final class HealthKitService {
 
     // MARK: - Загрузка
 
-    func fetchRaw(days: Int, now: Date = Date()) async -> RawHealthData {
+    /// `heartRateDays` ограничивает поминутный пульс (самый тяжёлый запрос) — виджетам хватает двух дней.
+    func fetchRaw(days: Int, heartRateDays: Int? = nil, now: Date = Date()) async -> RawHealthData {
         let calendar = Calendar.current
         let start = calendar.date(byAdding: .day, value: -(days + 1), to: calendar.startOfDay(for: now)) ?? now
         let yearAgo = calendar.date(byAdding: .day, value: -365, to: now) ?? start
+        let heartRateStart = heartRateDays
+            .flatMap { calendar.date(byAdding: .day, value: -$0, to: calendar.startOfDay(for: now)) } ?? start
 
-        async let heartRate = minuteHeartRate(start: start, end: now)
+        async let heartRate = minuteHeartRate(start: heartRateStart, end: now)
         async let resting = daily(.restingHeartRate, unit: Self.bpm, options: .discreteAverage, start: start, end: now)
         async let hrv = values(.heartRateVariabilitySDNN, unit: .secondUnit(with: .milli), start: start, end: now)
         async let respiratory = values(.respiratoryRate, unit: Self.bpm, start: start, end: now)
@@ -217,18 +220,4 @@ final class HealthKitService {
                 distanceMeters: distanceStats?.sumQuantity()?.doubleValue(for: .meter()))
         }
     }
-
-    // MARK: - Тренировки на часах
-
-    #if os(iOS)
-    /// Запускает приложение на Apple Watch с выбранной тренировкой.
-    func startWatchWorkout(_ activity: HKWorkoutActivityType, completion: @escaping (Error?) -> Void) {
-        let configuration = HKWorkoutConfiguration()
-        configuration.activityType = activity
-        configuration.locationType = WorkoutCatalog.location(for: activity)
-        store.startWatchApp(with: configuration) { _, error in
-            DispatchQueue.main.async { completion(error) }
-        }
-    }
-    #endif
 }

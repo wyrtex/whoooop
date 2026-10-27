@@ -97,16 +97,26 @@ jobs:
           find "$APP" -maxdepth 5 \( -name "*.app" -o -name "*.appex" \) | sort
           plutil -p "$WATCH_APP/Info.plist" | grep -E "CFBundleIdentifier|WKCompanion|WKApplication"
 
+          # Полная сборка: iPhone + Apple Watch + виджеты.
           rm -rf Payload && mkdir Payload
           cp -R "$APP" Payload/
+          zip -qry "$APP_NAME-with-watch.ipa" Payload
+
+          # Сборка только для iPhone: подходит для eSign и сертификатов без профиля часов.
+          # Метрики всё равно считаются по данным Apple Watch из «Здоровья».
+          rm -rf "Payload/$APP_NAME.app/Watch"
+          codesign --force --sign - --entitlements iOS/Pulsar.entitlements "Payload/$APP_NAME.app"
+          rm -f "$APP_NAME.ipa"
           zip -qry "$APP_NAME.ipa" Payload
-          ls -lh "$APP_NAME.ipa"
+          ls -lh *.ipa
 
       - name: Upload IPA
         uses: actions/upload-artifact@v4
         with:
           name: Pulsar-ipa
-          path: Pulsar.ipa
+          path: |
+            Pulsar.ipa
+            Pulsar-with-watch.ipa
           if-no-files-found: error
 
       - name: Upload build log
@@ -121,5 +131,7 @@ jobs:
         if: startsWith(github.ref, 'refs/tags/v')
         uses: softprops/action-gh-release@v2
         with:
-          files: Pulsar.ipa
+          files: |
+            Pulsar.ipa
+            Pulsar-with-watch.ipa
           generate_release_notes: true

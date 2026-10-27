@@ -5,6 +5,8 @@ final class SyncBridge: NSObject, ObservableObject, WCSessionDelegate {
     static let shared = SyncBridge()
 
     @Published private(set) var summary: WatchSummary?
+    /// На iPhone: установлено ли приложение на часах (в сборке «только iPhone» — нет).
+    @Published private(set) var isWatchAppInstalled = false
     private var pending: WatchSummary?
     private static let storageKey = "watchSummary.v1"
 
@@ -51,6 +53,7 @@ final class SyncBridge: NSObject, ObservableObject, WCSessionDelegate {
     // MARK: WCSessionDelegate
 
     func session(_ session: WCSession, activationDidCompleteWith activationState: WCSessionActivationState, error: Error?) {
+        updateWatchState(session)
         guard activationState == .activated else { return }
         receive(session.receivedApplicationContext)
         if let pending {
@@ -63,7 +66,18 @@ final class SyncBridge: NSObject, ObservableObject, WCSessionDelegate {
         receive(applicationContext)
     }
 
+    private func updateWatchState(_ session: WCSession) {
+        #if os(iOS)
+        let installed = session.activationState == .activated && session.isPaired && session.isWatchAppInstalled
+        DispatchQueue.main.async { self.isWatchAppInstalled = installed }
+        #endif
+    }
+
     #if os(iOS)
+    func sessionWatchStateDidChange(_ session: WCSession) {
+        updateWatchState(session)
+    }
+
     func sessionDidBecomeInactive(_ session: WCSession) {}
 
     func sessionDidDeactivate(_ session: WCSession) {

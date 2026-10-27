@@ -13,15 +13,19 @@ struct SummaryEntry: TimelineEntry {
     }
 }
 
-private func makeTimeline(metrics: [WidgetMetric] = []) -> Timeline<SummaryEntry> {
+/// Как часто виджет просит систему обновить его. iOS может откладывать обновления,
+/// поэтому в средних и больших виджетах есть кнопка мгновенного обновления.
+let widgetRefreshInterval: TimeInterval = 3 * 60
+
+private func makeTimeline(summary: WatchSummary?, metrics: [WidgetMetric] = []) -> Timeline<SummaryEntry> {
     let now = Date()
-    let summary = SharedSnapshot.load()
     var entries = [SummaryEntry(date: now, summary: summary, metrics: metrics)]
     // В полночь перерисовываем виджет, чтобы показать, что данные за вчера.
-    if let midnight = Calendar.current.date(byAdding: .day, value: 1, to: Calendar.current.startOfDay(for: now)) {
+    if let midnight = Calendar.current.date(byAdding: .day, value: 1, to: Calendar.current.startOfDay(for: now)),
+       midnight.timeIntervalSince(now) < widgetRefreshInterval {
         entries.append(SummaryEntry(date: midnight, summary: summary, metrics: metrics))
     }
-    return Timeline(entries: entries, policy: .after(now.addingTimeInterval(30 * 60)))
+    return Timeline(entries: entries, policy: .after(now.addingTimeInterval(widgetRefreshInterval)))
 }
 
 struct SummaryProvider: TimelineProvider {
@@ -30,12 +34,15 @@ struct SummaryProvider: TimelineProvider {
     }
 
     func getSnapshot(in context: Context, completion: @escaping (SummaryEntry) -> Void) {
-        let stored = SharedSnapshot.load()
+        let stored = WidgetDataLoader.cached()
         completion(SummaryEntry(date: Date(), summary: context.isPreview ? (stored ?? .sample) : stored))
     }
 
     func getTimeline(in context: Context, completion: @escaping (Timeline<SummaryEntry>) -> Void) {
-        completion(makeTimeline())
+        Task {
+            let summary = await WidgetDataLoader.load()
+            completion(makeTimeline(summary: summary))
+        }
     }
 }
 
@@ -74,12 +81,12 @@ struct MetricsProvider: AppIntentTimelineProvider {
     }
 
     func snapshot(for configuration: MetricsIntent, in context: Context) async -> SummaryEntry {
-        let stored = SharedSnapshot.load()
+        let stored = WidgetDataLoader.cached()
         return SummaryEntry(date: Date(), summary: context.isPreview ? (stored ?? .sample) : stored, metrics: configuration.metrics)
     }
 
     func timeline(for configuration: MetricsIntent, in context: Context) async -> Timeline<SummaryEntry> {
-        makeTimeline(metrics: configuration.metrics)
+        makeTimeline(summary: await WidgetDataLoader.load(), metrics: configuration.metrics)
     }
 
     #if os(watchOS)

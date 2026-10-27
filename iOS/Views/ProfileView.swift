@@ -1,4 +1,5 @@
 import SwiftUI
+import WidgetKit
 
 struct ProfileView: View {
     @EnvironmentObject private var store: HealthDataStore
@@ -76,6 +77,14 @@ struct ProfileView: View {
                             Spacer()
                             if store.isLoading { ProgressView() }
                         }
+                    }
+                    Button {
+                        Task {
+                            await store.refresh()
+                            WidgetCenter.shared.reloadAllTimelines()
+                        }
+                    } label: {
+                        Label("Обновить виджеты", systemImage: "square.grid.2x2")
                     }
                     if let updated = store.lastUpdated {
                         StatRow(title: "Последнее обновление", value: "\(Fmt.shortDay(updated)), \(Fmt.time(updated))")

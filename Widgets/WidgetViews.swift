@@ -105,23 +105,16 @@ struct OverviewView: View {
             return AnyView(Text("\(WidgetMetric.recovery.valueWithUnit(s)) · \(WidgetMetric.strain.value(s)) · сон \(WidgetMetric.sleep.valueWithUnit(s))"))
         #if os(iOS)
         case .systemMedium:
-            guard s != nil else { return AnyView(NoDataView()) }
+            guard s != nil else { return AnyView(NoDataView(showsRefresh: true)) }
             return AnyView(
                 VStack(spacing: 8) {
                     HStack(spacing: 12) {
                         ForEach(main, id: \.self) { MetricRing(metric: $0, summary: s, lineWidth: 7) }
                     }
-                    HStack {
-                        Text("ВСР \(WidgetMetric.hrv.valueWithUnit(s)) · ПП \(WidgetMetric.restingHR.value(s)) · стресс \(WidgetMetric.stress.value(s))")
-                            .font(.caption2)
-                            .foregroundStyle(Theme.secondaryText)
-                            .lineLimit(1)
-                        Spacer()
-                        UpdatedLabel(entry: entry)
-                    }
+                    FooterBar(entry: entry, leading: "ВСР \(WidgetMetric.hrv.valueWithUnit(s)) · ПП \(WidgetMetric.restingHR.value(s)) · стресс \(WidgetMetric.stress.value(s))")
                 })
         case .systemLarge:
-            guard let summary = s else { return AnyView(NoDataView()) }
+            guard let summary = s else { return AnyView(NoDataView(showsRefresh: true)) }
             return AnyView(OverviewLargeView(entry: entry, summary: summary))
         #endif
         default:
@@ -166,6 +159,7 @@ private struct OverviewLargeView: View {
                     .tracking(1.5)
                 Spacer()
                 UpdatedLabel(entry: entry)
+                RefreshButton()
             }
             HStack(spacing: 14) {
                 ForEach([WidgetMetric.sleep, .recovery, .strain], id: \.self) {
@@ -224,7 +218,7 @@ struct VitalsView: View {
             return AnyView(Text("ВСР \(WidgetMetric.hrv.valueWithUnit(s)) · ПП \(WidgetMetric.restingHR.value(s))"))
         #if os(iOS)
         case .systemMedium:
-            guard s != nil else { return AnyView(NoDataView()) }
+            guard s != nil else { return AnyView(NoDataView(showsRefresh: true)) }
             return AnyView(
                 VStack(alignment: .leading, spacing: 10) {
                     HStack {
@@ -233,6 +227,7 @@ struct VitalsView: View {
                             .foregroundStyle(Theme.recoveryGreen)
                         Spacer()
                         UpdatedLabel(entry: entry)
+                        RefreshButton()
                     }
                     LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible()), GridItem(.flexible())], alignment: .leading, spacing: 10) {
                         ForEach([WidgetMetric.hrv, .restingHR, .respiratoryRate, .spo2, .stress, .steps], id: \.self) {
@@ -328,13 +323,13 @@ struct CustomMetricsView: View {
         #endif
         #if os(iOS)
         case .systemMedium:
-            guard s != nil else { return AnyView(NoDataView()) }
+            guard s != nil else { return AnyView(NoDataView(showsRefresh: true)) }
             return AnyView(
                 VStack(spacing: 8) {
                     HStack(spacing: 10) {
                         ForEach(metrics, id: \.self) { MetricRing(metric: $0, summary: s, lineWidth: 6) }
                     }
-                    UpdatedLabel(entry: entry)
+                    FooterBar(entry: entry)
                 })
         #endif
         default:
