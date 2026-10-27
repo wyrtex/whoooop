@@ -49,6 +49,7 @@ final class HealthKitService {
             HKQuantityType(.activeEnergyBurned),
             HKQuantityType(.distanceWalkingRunning),
             HKQuantityType(.distanceCycling),
+            HKQuantityType(.bodyMass),
         ]
     }
 
@@ -219,5 +220,33 @@ final class HealthKitService {
                 energyKcal: energy,
                 distanceMeters: distanceStats?.sumQuantity()?.doubleValue(for: .meter()))
         }
+    }
+
+    // MARK: - Вес
+
+    /// История веса из «Здоровья» (весы, приложения и записи Pulsar).
+    func weightHistory(days: Int) async -> [ValueSample] {
+        let start = Calendar.current.date(byAdding: .day, value: -days, to: Date()) ?? Date()
+        return await values(.bodyMass, unit: .gramUnit(with: .kilo), start: start, end: Date())
+    }
+
+    @discardableResult
+    func saveWeight(_ kg: Double, date: Date) async -> Bool {
+        let quantity = HKQuantity(unit: .gramUnit(with: .kilo), doubleValue: kg)
+        let sample = HKQuantitySample(type: HKQuantityType(.bodyMass), quantity: quantity, start: date, end: date)
+        do {
+            try await store.save(sample)
+            return true
+        } catch {
+            return false
+        }
+    }
+
+    /// Удаляет только записи, сделанные этим приложением, в пределах секунды от даты.
+    func deleteWeight(at date: Date) async {
+        let timePredicate = HKQuery.predicateForSamples(withStart: date.addingTimeInterval(-1), end: date.addingTimeInterval(1), options: [])
+        let sourcePredicate = HKQuery.predicateForObjects(from: HKSource.default())
+        let predicate = NSCompoundPredicate(andPredicateWithSubpredicates: [timePredicate, sourcePredicate])
+        _ = try? await store.deleteObjects(of: HKQuantityType(.bodyMass), predicate: predicate)
     }
 }

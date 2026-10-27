@@ -10,3 +10,7 @@ Payload/
 *.ipa
 .DS_Store
 xcuserdata/
+
+# Ключи и сгенерированные секреты
+iOS/Generated/
+.secrets/

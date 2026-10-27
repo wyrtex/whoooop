@@ -9,6 +9,26 @@ struct HealthView: View {
                 VStack(spacing: 16) {
                     if let day = store.today {
                         HealthMonitorCard(day: day)
+                        NavigationLink {
+                            JournalView()
+                        } label: {
+                            Card {
+                                HStack {
+                                    Image(systemName: "book.closed.fill")
+                                        .font(.title2)
+                                        .foregroundStyle(Theme.strain)
+                                    VStack(alignment: .leading) {
+                                        Text("Дневник привычек").font(.headline)
+                                        Text("Что влияет на ваше восстановление")
+                                            .font(.subheadline)
+                                            .foregroundStyle(Theme.secondaryText)
+                                    }
+                                    Spacer()
+                                    Image(systemName: "chevron.right").foregroundStyle(Theme.tertiaryText)
+                                }
+                            }
+                        }
+                        .buttonStyle(.plain)
                         BiologicalAgeCard()
                         NavigationLink {
                             StressView(day: day)

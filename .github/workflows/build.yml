@@ -35,6 +35,8 @@ jobs:
       - name: Install XcodeGen
         run: brew install xcodegen
 
+      # Ключи Gemini в публичную сборку не встраиваются: артефакты публичного репозитория
+      # может скачать любой, и ключ извлекается из IPA. Ключи вводятся в приложении (Keychain).
       - name: Generate Xcode project
         run: xcodegen generate
 

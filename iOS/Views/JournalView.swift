@@ -113,13 +113,13 @@ final class JournalStore: ObservableObject {
     }
 }
 
+/// Дневник открывается из вкладки «Здоровье» (в навигационном стеке этой вкладки).
 struct JournalView: View {
     @EnvironmentObject private var store: HealthDataStore
     @EnvironmentObject private var journal: JournalStore
     @State private var day: Date = Calendar.current.date(byAdding: .day, value: -1, to: Calendar.current.startOfDay(for: Date())) ?? Date()
 
     var body: some View {
-        NavigationStack {
             List {
                 Section {
                     DatePicker("День", selection: $day, in: ...Date(), displayedComponents: .date)
@@ -164,7 +164,6 @@ struct JournalView: View {
             .scrollContentBackground(.hidden)
             .screenBackground()
             .navigationTitle("Дневник")
-        }
     }
 }
 

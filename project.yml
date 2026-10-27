@@ -6,6 +6,8 @@ options:
     iOS: "17.0"
     watchOS: "10.0"
   createIntermediateGroups: true
+  # Ключи Gemini для личной локальной сборки из .secrets/gemini_keys (файл не коммитится).
+  preGenCommand: python3 scripts/generate_secrets.py
 
 settings:
   base:

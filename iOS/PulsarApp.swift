@@ -24,6 +24,7 @@ enum BackgroundRefresh {
 struct PulsarApp: App {
     @StateObject private var store = BackgroundRefresh.store
     @StateObject private var journal = JournalStore()
+    @StateObject private var loss = LossStore(health: BackgroundRefresh.store)
     @Environment(\.scenePhase) private var scenePhase
 
     init() {
@@ -35,6 +36,7 @@ struct PulsarApp: App {
             RootView()
                 .environmentObject(store)
                 .environmentObject(journal)
+                .environmentObject(loss)
                 .preferredColorScheme(.dark)
                 .tint(Theme.strain)
         }
@@ -69,10 +71,10 @@ struct MainTabView: View {
         TabView {
             HomeView()
                 .tabItem { Label("Обзор", systemImage: "circle.circle") }
+            LossView()
+                .tabItem { Label("Похудение", systemImage: "scalemass.fill") }
             TrendsView()
                 .tabItem { Label("Тренды", systemImage: "chart.xyaxis.line") }
-            JournalView()
-                .tabItem { Label("Дневник", systemImage: "book.closed.fill") }
             HealthView()
                 .tabItem { Label("Здоровье", systemImage: "heart.text.square.fill") }
             ProfileView()
