@@ -116,7 +116,9 @@ final class HealthDataStore: ObservableObject {
         Storage.saveFile(built, name: Storage.cacheFile)
         #if os(iOS)
         if let today = built.last {
-            SyncBridge.shared.send(WatchSummary.make(from: today, profile: profile))
+            let summary = WatchSummary.make(from: today, profile: profile, history: built)
+            SyncBridge.shared.send(summary)
+            SharedSnapshot.save(summary)
         }
         #endif
     }

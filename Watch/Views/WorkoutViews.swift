@@ -138,7 +138,7 @@ struct WorkoutSummaryView: View {
                 row("Максимальный", "\(Fmt.number(summary.maxHR)) уд/мин")
                 Button("Готово") {
                     workout.dismissSummary()
-                    Task { await store.refresh() }
+                    Task { await WatchBackground.refresh() }
                 }
                 .tint(Theme.strain)
                 .padding(.top, 6)

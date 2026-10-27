@@ -1,49 +1,6 @@
 import Foundation
 import WatchConnectivity
 
-/// Короткая сводка дня, которую iPhone отправляет на часы.
-struct WatchSummary: Codable, Equatable {
-    var generatedAt: Date
-    var day: Date
-    var recovery: Double?
-    var strain: Double
-    var strainTargetLow: Double
-    var strainTargetHigh: Double
-    var sleepPerformance: Double?
-    var sleepAsleep: TimeInterval?
-    var sleepNeed: TimeInterval?
-    var sleepStages: [Double]?
-    var hrv: Double?
-    var restingHR: Double?
-    var respiratoryRate: Double?
-    var stress: Double?
-    var calories: Double
-    var profile: UserProfile
-
-    static func make(from day: DayMetrics, profile: UserProfile) -> WatchSummary {
-        let target = StrainEngine.target(forRecovery: day.recovery)
-        return WatchSummary(
-            generatedAt: Date(),
-            day: day.day,
-            recovery: day.recovery,
-            strain: day.strain,
-            strainTargetLow: target.lowerBound,
-            strainTargetHigh: target.upperBound,
-            sleepPerformance: day.sleepPerformance,
-            sleepAsleep: day.sleep?.asleep,
-            sleepNeed: day.sleepNeed?.total,
-            sleepStages: day.sleep.map { session in SleepStage.allCases.map { session.time(in: $0) } },
-            hrv: day.vitals.hrv,
-            restingHR: day.vitals.restingHR,
-            respiratoryRate: day.vitals.respiratoryRate,
-            stress: day.currentStress,
-            calories: day.totalEnergy,
-            profile: profile)
-    }
-
-    var isToday: Bool { Calendar.current.isDateInToday(day) }
-}
-
 final class SyncBridge: NSObject, ObservableObject, WCSessionDelegate {
     static let shared = SyncBridge()
 
@@ -82,6 +39,10 @@ final class SyncBridge: NSObject, ObservableObject, WCSessionDelegate {
         guard let data = context["summary"] as? Data,
               let decoded = try? JSONDecoder().decode(WatchSummary.self, from: data) else { return }
         Storage.save(decoded, key: Self.storageKey)
+        #if os(watchOS)
+        // Сводка с iPhone точнее локальной — сразу обновляем циферблат.
+        SharedSnapshot.save(decoded)
+        #endif
         DispatchQueue.main.async {
             self.summary = decoded
         }

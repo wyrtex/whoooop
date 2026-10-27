@@ -1,8 +1,28 @@
 import SwiftUI
+import BackgroundTasks
+
+/// Периодическое обновление в фоне, чтобы виджеты не устаревали.
+@MainActor
+enum BackgroundRefresh {
+    static let identifier = "com.pulsar.app.refresh"
+    static let store = HealthDataStore(historyDays: 60)
+
+    static func schedule() {
+        let request = BGAppRefreshTaskRequest(identifier: identifier)
+        request.earliestBeginDate = Date().addingTimeInterval(30 * 60)
+        try? BGTaskScheduler.shared.submit(request)
+    }
+
+    static func run() async {
+        schedule()
+        guard store.hasOnboarded else { return }
+        await store.refresh()
+    }
+}
 
 @main
 struct PulsarApp: App {
-    @StateObject private var store = HealthDataStore(historyDays: 60)
+    @StateObject private var store = BackgroundRefresh.store
     @StateObject private var journal = JournalStore()
     @Environment(\.scenePhase) private var scenePhase
 
@@ -22,6 +42,12 @@ struct PulsarApp: App {
             if phase == .active, store.hasOnboarded {
                 Task { await store.refresh() }
             }
+            if phase == .background {
+                BackgroundRefresh.schedule()
+            }
+        }
+        .backgroundTask(.appRefresh(BackgroundRefresh.identifier)) {
+            await BackgroundRefresh.run()
         }
     }
 }

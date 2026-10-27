@@ -44,8 +44,12 @@ targets:
         ITSAppUsesNonExemptEncryption: false
         NSHealthShareUsageDescription: Pulsar читает пульс, ВСР, сон, тренировки и другие показатели из Apple Health, чтобы рассчитать восстановление, нагрузку и качество сна.
         NSHealthUpdateUsageDescription: Pulsar сохраняет тренировки, записанные на Apple Watch, в Apple Health.
+        PulsarAppGroup: group.com.pulsar.app
+        UIBackgroundModes: [fetch]
+        BGTaskSchedulerPermittedIdentifiers: [com.pulsar.app.refresh]
     dependencies:
       - target: PulsarWatch
+      - target: PulsarWidgets
     scheme: {}
 
   PulsarWatch:
@@ -73,3 +77,55 @@ targets:
         WKBackgroundModes: [workout-processing]
         NSHealthShareUsageDescription: Pulsar читает пульс, сон и тренировки, чтобы показывать восстановление и нагрузку прямо на часах.
         NSHealthUpdateUsageDescription: Pulsar записывает тренировки с часов в Apple Health.
+        PulsarAppGroup: group.com.pulsar.app
+    dependencies:
+      - target: PulsarWatchWidgets
+
+  # Виджеты iPhone: рабочий стол и экран блокировки.
+  PulsarWidgets:
+    type: app-extension
+    platform: iOS
+    sources: &widgetSources
+      - path: Shared/Models
+      - path: Shared/Engine
+      - path: Shared/UI
+      - path: Shared/Snapshot
+      - path: Widgets
+    settings:
+      base:
+        PRODUCT_NAME: PulsarWidgets
+        PRODUCT_BUNDLE_IDENTIFIER: com.pulsar.app.widgets
+        CODE_SIGN_ENTITLEMENTS: Config/PulsarWidgets.entitlements
+        TARGETED_DEVICE_FAMILY: "1"
+        SKIP_INSTALL: YES
+    info:
+      path: Config/PulsarWidgets-Info.plist
+      properties:
+        CFBundleDisplayName: Pulsar
+        CFBundleShortVersionString: $(MARKETING_VERSION)
+        CFBundleVersion: $(CURRENT_PROJECT_VERSION)
+        PulsarAppGroup: group.com.pulsar.app
+        NSExtension:
+          NSExtensionPointIdentifier: com.apple.widgetkit-extension
+
+  # Виджеты для циферблата Apple Watch (complications).
+  PulsarWatchWidgets:
+    type: app-extension
+    platform: watchOS
+    sources: *widgetSources
+    settings:
+      base:
+        PRODUCT_NAME: PulsarWatchWidgets
+        PRODUCT_BUNDLE_IDENTIFIER: com.pulsar.app.watchkitapp.widgets
+        CODE_SIGN_ENTITLEMENTS: Config/PulsarWidgets.entitlements
+        TARGETED_DEVICE_FAMILY: "4"
+        SKIP_INSTALL: YES
+    info:
+      path: Config/PulsarWatchWidgets-Info.plist
+      properties:
+        CFBundleDisplayName: Pulsar
+        CFBundleShortVersionString: $(MARKETING_VERSION)
+        CFBundleVersion: $(CURRENT_PROJECT_VERSION)
+        PulsarAppGroup: group.com.pulsar.app
+        NSExtension:
+          NSExtensionPointIdentifier: com.apple.widgetkit-extension

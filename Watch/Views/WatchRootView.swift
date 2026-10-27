@@ -8,15 +8,8 @@ struct WatchRootView: View {
     @EnvironmentObject private var heartRate: LiveHeartRateMonitor
     @Environment(\.scenePhase) private var scenePhase
 
-    /// Свежая сводка с iPhone важнее локального расчёта: у телефона больше истории для норм.
     private var summary: WatchSummary? {
-        if let remote = sync.summary, remote.isToday, Date().timeIntervalSince(remote.generatedAt) < 6 * 3600 {
-            return remote
-        }
-        if let today = store.today, Calendar.current.isDateInToday(today.day) {
-            return WatchSummary.make(from: today, profile: store.profile)
-        }
-        return sync.summary
+        WatchBackground.resolve(remote: sync.summary)
     }
 
     var body: some View {
@@ -41,13 +34,14 @@ struct WatchRootView: View {
             sync.activate()
             try? await HealthKitService.shared.requestAuthorization()
             heartRate.start()
-            await store.refresh()
+            await WatchBackground.refresh()
         }
         .onChange(of: scenePhase) { _, phase in
-            if phase == .active { Task { await store.refresh() } }
+            if phase == .active { Task { await WatchBackground.refresh() } }
         }
         .onChange(of: sync.summary) { _, remote in
             if let remote { store.applyRemoteProfile(remote.profile) }
+            WatchBackground.publish()
         }
     }
 }

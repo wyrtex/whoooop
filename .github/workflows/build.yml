@@ -77,11 +77,24 @@ jobs:
 
           # Ad-hoc подпись с entitlements: Sideloadly/AltStore/Xcode переподпишут
           # приложение своим сертификатом и сохранят доступ к HealthKit.
+          # Подписываем изнутри наружу: виджеты часов → часы → виджеты iPhone → iPhone.
+          sign_plugins() {
+            for appex in "$1"/PlugIns/*.appex; do
+              [ -d "$appex" ] || continue
+              codesign --force --sign - --entitlements Config/PulsarWidgets.entitlements "$appex"
+            done
+          }
+          sign_plugins "$WATCH_APP"
           codesign --force --sign - --entitlements Watch/PulsarWatch.entitlements "$WATCH_APP"
+          sign_plugins "$APP"
           codesign --force --sign - --entitlements iOS/Pulsar.entitlements "$APP"
 
+          for required in "$APP/PlugIns/PulsarWidgets.appex" "$WATCH_APP/PlugIns/PulsarWatchWidgets.appex"; do
+            [ -d "$required" ] || { echo "::error::Missing $required"; exit 1; }
+          done
+
           echo "Bundle contents:"
-          find "$APP" -maxdepth 3 \( -name "*.app" -o -name "Info.plist" \) | sort
+          find "$APP" -maxdepth 5 \( -name "*.app" -o -name "*.appex" \) | sort
           plutil -p "$WATCH_APP/Info.plist" | grep -E "CFBundleIdentifier|WKCompanion|WKApplication"
 
           rm -rf Payload && mkdir Payload
