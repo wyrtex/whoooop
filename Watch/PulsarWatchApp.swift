@@ -44,7 +44,7 @@ final class LiveHeartRateMonitor: ObservableObject {
     func start() {
         guard query == nil else { return }
         let predicate = HKQuery.predicateForSamples(withStart: Date().addingTimeInterval(-6 * 3600), end: nil, options: [])
-        let handler: (HKAnchoredObjectQuery, [HKSample]?, [HKDeletedObject]?, HKQueryAnchor?, Error?) -> Void = { [weak self] _, samples, _, _, _ in
+        let handler: @Sendable (HKAnchoredObjectQuery, [HKSample]?, [HKDeletedObject]?, HKQueryAnchor?, Error?) -> Void = { [weak self] _, samples, _, _, _ in
             guard let latest = (samples as? [HKQuantitySample])?.max(by: { $0.endDate < $1.endDate }) else { return }
             let value = latest.quantity.doubleValue(for: HealthKitService.bpm)
             let date = latest.endDate
