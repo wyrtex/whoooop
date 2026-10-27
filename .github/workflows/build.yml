@@ -1,0 +1,112 @@
+name: Build IPA
+
+on:
+  push:
+    branches: ["**"]
+    tags: ["v*"]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: Build unsigned IPA (iPhone + Apple Watch)
+    runs-on: macos-15
+    timeout-minutes: 60
+    env:
+      APP_NAME: Pulsar
+      WATCH_NAME: PulsarWatch
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Show Xcode
+        run: |
+          xcodebuild -version
+          xcodebuild -showsdks
+
+      - name: Ensure watchOS platform
+        run: |
+          if ! xcodebuild -showsdks | grep -q "watchos"; then
+            xcodebuild -downloadPlatform watchOS
+          fi
+
+      - name: Install XcodeGen
+        run: brew install xcodegen
+
+      - name: Generate Xcode project
+        run: xcodegen generate
+
+      - name: Build
+        run: |
+          set +e
+          xcodebuild \
+            -project "$APP_NAME.xcodeproj" \
+            -scheme "$APP_NAME" \
+            -configuration Release \
+            -destination 'generic/platform=iOS' \
+            -derivedDataPath build \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGN_IDENTITY="" \
+            build > build.log 2>&1
+          status=$?
+          if [ $status -ne 0 ]; then
+            echo "::group::Compiler errors"
+            grep -E "error:|fatal error|\*\* BUILD FAILED" build.log | sort -u | head -150
+            echo "::endgroup::"
+            tail -80 build.log
+            exit $status
+          fi
+          grep -E "warning:" build.log | grep -v "appintents" | sort -u | head -60 || true
+          tail -5 build.log
+
+      - name: Package IPA
+        run: |
+          set -euo pipefail
+          PRODUCTS=build/Build/Products
+          APP="$PRODUCTS/Release-iphoneos/$APP_NAME.app"
+          WATCH_APP="$APP/Watch/$WATCH_NAME.app"
+
+          if [ ! -d "$WATCH_APP" ]; then
+            echo "Watch app is not embedded by Xcode, copying manually"
+            mkdir -p "$APP/Watch"
+            cp -R "$PRODUCTS/Release-watchos/$WATCH_NAME.app" "$APP/Watch/"
+          fi
+
+          # Ad-hoc подпись с entitlements: Sideloadly/AltStore/Xcode переподпишут
+          # приложение своим сертификатом и сохранят доступ к HealthKit.
+          codesign --force --sign - --entitlements Watch/PulsarWatch.entitlements "$WATCH_APP"
+          codesign --force --sign - --entitlements iOS/Pulsar.entitlements "$APP"
+
+          echo "Bundle contents:"
+          find "$APP" -maxdepth 3 \( -name "*.app" -o -name "Info.plist" \) | sort
+          plutil -p "$WATCH_APP/Info.plist" | grep -E "CFBundleIdentifier|WKCompanion|WKApplication"
+
+          rm -rf Payload && mkdir Payload
+          cp -R "$APP" Payload/
+          zip -qry "$APP_NAME.ipa" Payload
+          ls -lh "$APP_NAME.ipa"
+
+      - name: Upload IPA
+        uses: actions/upload-artifact@v4
+        with:
+          name: Pulsar-ipa
+          path: Pulsar.ipa
+          if-no-files-found: error
+
+      - name: Upload build log
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-log
+          path: build.log
+          if-no-files-found: ignore
+
+      - name: Publish release
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: Pulsar.ipa
+          generate_release_notes: true
