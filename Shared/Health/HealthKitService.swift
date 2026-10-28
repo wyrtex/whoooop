@@ -110,7 +110,10 @@ final class HealthKitService {
             default: break
             }
         }
-        hints.weightKg = await latest(.bodyMass, unit: .gramUnit(with: .kilo))
+        // Только свежий вес: старая запись (например, годичной давности) испортит расчёт обмена.
+        if let weight = await latestSample(.bodyMass), Date().timeIntervalSince(weight.endDate) < 60 * 86400 {
+            hints.weightKg = weight.quantity.doubleValue(for: .gramUnit(with: .kilo))
+        }
         hints.heightCm = await latest(.height, unit: .meterUnit(with: .centi))
         return hints
     }
@@ -152,8 +155,12 @@ final class HealthKitService {
     }
 
     private func latest(_ id: HKQuantityTypeIdentifier, unit: HKUnit) async -> Double? {
+        await latestSample(id)?.quantity.doubleValue(for: unit)
+    }
+
+    private func latestSample(_ id: HKQuantityTypeIdentifier) async -> HKQuantitySample? {
         let results = await samples(of: HKQuantityType(id), start: .distantPast, end: Date(), limit: 1, ascending: false)
-        return (results.first as? HKQuantitySample)?.quantity.doubleValue(for: unit)
+        return results.first as? HKQuantitySample
     }
 
     private func daily(_ id: HKQuantityTypeIdentifier, unit: HKUnit, options: HKStatisticsOptions, start: Date, end: Date) async -> [Date: Double] {

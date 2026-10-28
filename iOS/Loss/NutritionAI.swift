@@ -38,8 +38,10 @@ enum NutritionAI {
             FoodItem(name: string(item["name"]) ?? "Компонент", grams: number(item["grams"]), nutrients: nutrients(item))
         }
         var total = nutrients(json)
-        if total.kcal <= 0, !items.isEmpty {
-            total = items.reduce(Nutrients.zero) { $0 + $1.nutrients }
+        // Модель иногда ошибается в итоговой сумме: считаем её сами по компонентам.
+        let itemsTotal = items.reduce(Nutrients.zero) { $0 + $1.nutrients }
+        if itemsTotal.kcal > 0 {
+            total = itemsTotal
         }
         guard total.kcal > 0 else { throw GeminiError.badResponse("нет калорий в ответе") }
 

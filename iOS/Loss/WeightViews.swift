@@ -74,7 +74,11 @@ struct WeightHistoryView: View {
                             .foregroundStyle(Theme.secondaryText)
                     }
                     Spacer()
-                    if index + 1 < entries.count {
+                    if loss.startsSegment(entry) {
+                        Label("новый отсчёт", systemImage: "pencil")
+                            .font(.caption)
+                            .foregroundStyle(Theme.tertiaryText)
+                    } else if index + 1 < entries.count {
                         let delta = entry.kg - entries[index + 1].kg
                         Text(String(format: "%+.1f", delta))
                             .font(.subheadline.monospacedDigit())
@@ -94,6 +98,12 @@ struct WeightHistoryView: View {
         }
         .scrollContentBackground(.hidden)
         .screenBackground()
+        .safeAreaInset(edge: .bottom) {
+            Text("Правка веса в профиле — это корректировка: статистика считается от неё, а более ранние записи на графики и изменения не влияют. Ошибочную запись можно удалить свайпом влево.")
+                .font(.caption)
+                .foregroundStyle(Theme.tertiaryText)
+                .padding(16)
+        }
         .navigationTitle("История веса")
     }
 
@@ -101,7 +111,7 @@ struct WeightHistoryView: View {
         switch source {
         case .app: return "Pulsar"
         case .health: return "Здоровье"
-        case .profile: return "профиль"
+        case .profile: return "корректировка в профиле"
         }
     }
 }

@@ -70,11 +70,29 @@ final class LossStore: ObservableObject {
     var sortedWeights: [WeightEntry] { weights.sorted { $0.date < $1.date } }
     var latestWeight: WeightEntry? { sortedWeights.last }
 
+    /// Взвешивания для статистики: начиная с последней корректировки веса в профиле
+    /// (она задаёт новую точку отсчёта) и не старше 90 дней. Так старые или ошибочные
+    /// записи не дают скачков вроде «+18 кг за неделю». В истории они остаются.
+    var statsWeights: [WeightEntry] {
+        let cutoff = Date().addingTimeInterval(-90 * 86400)
+        let recent = sortedWeights.filter { $0.date >= cutoff }
+        guard let correction = recent.lastIndex(where: { $0.source == .profile }) else { return recent }
+        return Array(recent[correction...])
+    }
+
+    /// Изменение за `days` дней: сравнивается с самым ранним взвешиванием в этом окне.
     func weightChange(days: Int) -> Double? {
-        guard let latest = latestWeight,
-              let from = Calendar.current.date(byAdding: .day, value: -days, to: latest.date) else { return nil }
-        guard let past = sortedWeights.last(where: { $0.date <= from }) ?? sortedWeights.first, past.id != latest.id else { return nil }
+        let stats = statsWeights
+        guard let latest = stats.last,
+              let from = Calendar.current.date(byAdding: .day, value: -days, to: latest.date),
+              let past = stats.first(where: { $0.date >= from }),
+              past.id != latest.id else { return nil }
         return latest.kg - past.kg
+    }
+
+    /// Запись — корректировка или начало нового отсчёта (дельта с предыдущей не считается).
+    func startsSegment(_ entry: WeightEntry) -> Bool {
+        entry.source == .profile
     }
 
     func addWeight(_ kg: Double, date: Date) async {
@@ -102,7 +120,7 @@ final class LossStore: ObservableObject {
 
     /// Подтягивает взвешивания из «Здоровья» (умные весы, другие приложения).
     func importHealthWeights() async {
-        let samples = await HealthKitService.shared.weightHistory(days: 365)
+        let samples = await HealthKitService.shared.weightHistory(days: 90)
         var changed = false
         for sample in samples {
             let isHidden = hiddenHealthWeights.contains { abs($0 - sample.start.timeIntervalSince1970) < 2 }

@@ -70,10 +70,14 @@ struct BalanceCard: View {
                 .frame(width: 112, height: 112)
                 VStack(alignment: .leading, spacing: 8) {
                     EnergyRow(symbol: "fork.knife", color: Theme.stress, title: "Съедено", value: today.eaten)
-                    EnergyRow(symbol: "flame.fill", color: Theme.strain, title: today.basalEstimated ? "Сожжено*" : "Сожжено", value: today.burned)
+                    EnergyRow(symbol: "flame.fill", color: Theme.recoveryRed, title: "Активные", value: today.active)
+                    EnergyRow(symbol: "bed.double.fill", color: Theme.sleep, title: today.basalEstimated ? "Обмен*" : "Обмен", value: today.basal)
                     EnergyRow(symbol: "plusminus", color: today.balance <= 0 ? Theme.recoveryGreen : Theme.recoveryRed, title: "Баланс", value: today.balance, signed: true)
                 }
             }
+            Text("«Активные» — то же число, что красное кольцо в «Фитнесе». «Обмен» — базовые калории, которые организм тратит в покое (сон, дыхание, мозг); Apple Watch считает их отдельно и в «Фитнесе» не показывает. Сожжено всего: \(Int(today.burned)) ккал на сейчас.")
+                .font(.caption)
+                .foregroundStyle(Theme.tertiaryText)
             Text("К концу дня: \(Fmt.signed(projected)) ккал ≈ \(weightText(projected / 7700)). Норма на день — \(Int(budget)) ккал.")
                 .font(.footnote)
                 .foregroundStyle(Theme.secondaryText)
@@ -136,7 +140,7 @@ struct WeightCard: View {
                 }
             }
             if let goal = loss.settings.goalWeight, let latest = loss.latestWeight {
-                GoalProgress(start: loss.sortedWeights.first?.kg ?? latest.kg, current: latest.kg, goal: goal, date: loss.goalDate)
+                GoalProgress(start: loss.statsWeights.first?.kg ?? latest.kg, current: latest.kg, goal: goal, date: loss.goalDate)
             }
             WeightChart()
                 .frame(height: 160)
@@ -199,7 +203,7 @@ struct WeightChart: View {
     /// Факт и прогноз по калориям: старт с первого взвешивания за 60 дней.
     private var points: [Point] {
         let from = Calendar.current.date(byAdding: .day, value: -60, to: Date()) ?? Date()
-        let actual = loss.sortedWeights.filter { $0.date >= from }
+        let actual = loss.statsWeights.filter { $0.date >= from }
         var result = actual.map { Point(date: $0.date, kg: $0.kg, series: "Факт") }
         if let first = actual.first {
             var predicted = first.kg

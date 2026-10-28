@@ -148,7 +148,7 @@ private struct OverviewLargeView: View {
     var entry: SummaryEntry
     var summary: WatchSummary
 
-    private let vitals: [WidgetMetric] = [.hrv, .restingHR, .respiratoryRate, .spo2, .stress, .calories]
+    private let vitals: [WidgetMetric] = [.hrv, .restingHR, .respiratoryRate, .spo2, .stress, .activeCalories]
     private let columns = [GridItem(.flexible()), GridItem(.flexible()), GridItem(.flexible())]
 
     var body: some View {

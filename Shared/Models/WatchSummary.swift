@@ -19,7 +19,10 @@ struct WatchSummary: Codable, Equatable {
     var respiratoryRate: Double?
     var spo2: Double?
     var stress: Double?
+    /// Всего за день: активные + базовый обмен.
     var calories: Double
+    /// Только активные — как красное кольцо в «Фитнесе».
+    var activeCalories: Double?
     var steps: Double
     var insightTitle: String?
     var insightBody: String?
@@ -47,6 +50,7 @@ struct WatchSummary: Codable, Equatable {
             spo2: day.vitals.spo2,
             stress: day.currentStress,
             calories: day.totalEnergy,
+            activeCalories: day.activeEnergy,
             steps: day.steps,
             insightTitle: insight?.title,
             insightBody: insight?.body,
@@ -64,7 +68,7 @@ struct WatchSummary: Codable, Equatable {
         sleepPerformance: 88, sleepAsleep: 7.2 * 3600, sleepNeed: 8.1 * 3600,
         sleepStages: [0.4 * 3600, 1.7 * 3600, 3.9 * 3600, 1.6 * 3600],
         hrv: 58, hrvBaseline: 52, restingHR: 54, restingHRBaseline: 56,
-        respiratoryRate: 14.6, spo2: 97.2, stress: 0.8, calories: 2350, steps: 8400,
+        respiratoryRate: 14.6, spo2: 97.2, stress: 0.8, calories: 2350, activeCalories: 520, steps: 8400,
         insightTitle: "Организм готов к нагрузке",
         insightBody: "Хороший день для интенсивной тренировки.",
         profile: UserProfile())

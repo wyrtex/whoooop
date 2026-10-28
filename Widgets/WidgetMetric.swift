@@ -3,7 +3,7 @@ import AppIntents
 
 /// Показатель, который можно вывести в виджет.
 enum WidgetMetric: String, AppEnum, CaseIterable {
-    case recovery, strain, sleep, sleepHours, hrv, restingHR, respiratoryRate, spo2, stress, calories, steps
+    case recovery, strain, sleep, sleepHours, hrv, restingHR, respiratoryRate, spo2, stress, activeCalories, calories, steps
 
     static var typeDisplayRepresentation: TypeDisplayRepresentation = "Показатель"
 
@@ -17,7 +17,8 @@ enum WidgetMetric: String, AppEnum, CaseIterable {
         .respiratoryRate: "Частота дыхания",
         .spo2: "Кислород в крови",
         .stress: "Стресс",
-        .calories: "Калории",
+        .activeCalories: "Активные калории",
+        .calories: "Калории всего (с обменом)",
         .steps: "Шаги",
     ]
 
@@ -32,7 +33,8 @@ enum WidgetMetric: String, AppEnum, CaseIterable {
         case .respiratoryRate: return "Дыхание"
         case .spo2: return "SpO₂"
         case .stress: return "Стресс"
-        case .calories: return "Калории"
+        case .activeCalories: return "Активные"
+        case .calories: return "Всего ккал"
         case .steps: return "Шаги"
         }
     }
@@ -48,7 +50,8 @@ enum WidgetMetric: String, AppEnum, CaseIterable {
         case .respiratoryRate: return "ДЫХ"
         case .spo2: return "SpO₂"
         case .stress: return "СТРЕСС"
-        case .calories: return "ККАЛ"
+        case .activeCalories: return "АКТИВ"
+        case .calories: return "ВСЕГО"
         case .steps: return "ШАГИ"
         }
     }
@@ -63,6 +66,7 @@ enum WidgetMetric: String, AppEnum, CaseIterable {
         case .respiratoryRate: return "lungs.fill"
         case .spo2: return "drop.fill"
         case .stress: return "brain.head.profile"
+        case .activeCalories: return "flame.fill"
         case .calories: return "flame"
         case .steps: return "figure.walk"
         }
@@ -74,7 +78,7 @@ enum WidgetMetric: String, AppEnum, CaseIterable {
         case .hrv: return "мс"
         case .restingHR: return "уд/мин"
         case .respiratoryRate: return "вд/мин"
-        case .calories: return "ккал"
+        case .calories, .activeCalories: return "ккал"
         default: return ""
         }
     }
@@ -90,6 +94,7 @@ enum WidgetMetric: String, AppEnum, CaseIterable {
         case .respiratoryRate: return s.respiratoryRate
         case .spo2: return s.spo2
         case .stress: return s.stress
+        case .activeCalories: return s.activeCalories.flatMap { $0 > 0 ? $0 : nil }
         case .calories: return s.calories > 0 ? s.calories : nil
         case .steps: return s.steps > 0 ? s.steps : nil
         }
@@ -113,7 +118,7 @@ enum WidgetMetric: String, AppEnum, CaseIterable {
         guard text != "—" else { return text }
         switch self {
         case .recovery, .sleep, .spo2: return text + "%"
-        case .hrv, .restingHR, .calories: return text + " " + unit
+        case .hrv, .restingHR, .calories, .activeCalories: return text + " " + unit
         default: return text
         }
     }
@@ -130,6 +135,7 @@ enum WidgetMetric: String, AppEnum, CaseIterable {
         case .respiratoryRate: p = (v - 8) / 16
         case .spo2: p = (v - 85) / 15
         case .stress: p = v / 3
+        case .activeCalories: p = v / 800
         case .calories: p = v / 3500
         case .steps: p = v / 10000
         }
@@ -146,6 +152,7 @@ enum WidgetMetric: String, AppEnum, CaseIterable {
         case .respiratoryRate: return Theme.strain
         case .spo2: return Theme.recoveryRed
         case .stress: return Theme.stressColor(s?.stress ?? 0)
+        case .activeCalories: return Theme.recoveryRed
         case .calories: return Theme.stress
         case .steps: return Theme.recoveryYellow
         }
@@ -170,6 +177,10 @@ enum WidgetMetric: String, AppEnum, CaseIterable {
             return s.restingHRBaseline.map { "Норма \(Fmt.number($0))" } ?? "За ночь"
         case .stress:
             return s.stress.map { StressEngine.title($0) } ?? "Нет данных"
+        case .calories:
+            return "Активные \(Int(s.activeCalories ?? 0)) + обмен"
+        case .activeCalories:
+            return "Как в «Фитнесе»"
         default:
             return title
         }
